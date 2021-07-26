@@ -1,8 +1,10 @@
+from math import isclose
 from random import choice, randint
 from threading import Semaphore
 from typing import Counter
 from threading import Thread
 import copy
+import time
 
 inner_population = [] 
 inner_population_val = []
@@ -13,8 +15,9 @@ obj_3 = Semaphore(1)
 
 count_thread = 0
 
-#oke
+#oke1
 def handle_data(s):
+  #khoi tao mang Array voi len = 26
   array = []
   for i in range(0, 26):
     array.append(0)
@@ -41,7 +44,7 @@ def check_constraint(data, value):
   
   return False
 
-#oke
+#oke1
 def random_Population(constraint, L):
   Result = ['_'] * 10
   List_random = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
@@ -65,7 +68,7 @@ def random_Population(constraint, L):
         Result[v] = L[count]
         break
       elif (not (val == 0 and check == True)):
-        Result[val] = L[count]
+        Result[val] = L[count]  
         List_random.remove(val)
         break
 
@@ -73,7 +76,7 @@ def random_Population(constraint, L):
         break
   return Result
 
-#oke
+#oke1
 def determine_constraint(data):
   list = []
 
@@ -84,19 +87,23 @@ def determine_constraint(data):
   
   return list
 
-#oke
+#oke1
 def calculate_fitness(List, expression):
   for i in range(0, 10):
     if (List[i] != '_'):
       expression = expression.replace(List[i], str(i))
   
   return abs(eval(expression))
-#oke
+
+#oke1
 def check_constraint_exchange(v1, v2, constraint, list):
   if (v1 == v2):
     return False
   if (v1 != 0 and v2 != 0):
     return True
+
+  if (list[v1] == "_" and list[v2] == "_"):
+    return False
   
   if (v1 == 0):
     # check list[v2] : determine that list[v2] is located in list_constraint
@@ -111,7 +118,8 @@ def check_constraint_exchange(v1, v2, constraint, list):
         return False
   
   return True
-  
+
+#oke1
 def sub_thread(List, constraint, L, expression,k):
   global inner_population
   global inner_population_val
@@ -122,70 +130,53 @@ def sub_thread(List, constraint, L, expression,k):
       List = random_Population(constraint, L)
       if (check_constraint(constraint, List[0]) == False):
         break
-  
-  # making new generation from 1 => 100, 50
-  for count in range(0, 400):
-    obj_1.acquire()
-    while (True):
-      v1 = randint(0, 9)
-      v2 = randint(0, 9)
+
+  for v1 in range(0, 10):
+    for v2 in range(0, 10):
+      obj_1.acquire()
       if (check_constraint_exchange(v1, v2, list_constraint, List)):
-        break
-    
-    
-    tempt = copy.deepcopy(List)
-    ka = copy.deepcopy(List)
+        tempt = copy.deepcopy(List)
+        ka = copy.deepcopy(List)
 
-    # exchange
-    t = "_"
-    t = tempt[v1] 
-    tempt[v1] = tempt[v2]
-    tempt[v2] = t
+        # exchange
+        t = tempt[v1]   
+        tempt[v1] = tempt[v2]
+        tempt[v2] = t
 
-    # calculate the fitness | A + B - C|
-    try:
-      val = calculate_fitness(tempt,expression)
-    except:
-      print("List: ", List)
-      print("tempt: ", tempt)
-      print("Ka: ",  ka)
-      print("T: ", k)
-      print("V1: ", v1, "  V2: ", v2)
-    
-    val = calculate_fitness(tempt,expression)
-    
-    for i in range(0, 20):
-      if (inner_population_val[i] == -1):
-        # gan inner_opulation[i] = tempt
-        for k in range(0, 10):
-          inner_population[i][k] = tempt[k]
-        inner_population_val[i] = val
-        break
-      elif (inner_population_val[i] >= val):
-        #exchange
-        for j in range(19, i, -1):
-          if (inner_population_val[j - 1] != -1):
+        # calculate the fitness | A + B - C|
+        val = calculate_fitness(tempt,expression)
+
+        for i in range(0, 10):
+          if (inner_population_val[i] == -1):
+            # gan inner_opulation[i] = tempt
             for k in range(0, 10):
-              inner_population[j][k]  = inner_population[j - 1][k]
-            inner_population_val[j] = inner_population_val[j - 1]
-        for k in range(0, 10):
-          inner_population[i][k] = tempt[k]
-        inner_population_val[i] = val
-        break
-    
-    # random 
-    ran = randint(11, 30)
-    if (ran < 20):
-      for k in range(0, 10):
-        inner_population[ran][k] = tempt[k]
-      inner_population_val[ran] = val
-    
-    
-    obj_1.release()
+              inner_population[i][k] = tempt[k]
+            inner_population_val[i] = val
+            break
+          elif (inner_population_val[i] >= val):
+            #exchange
+            for j in range(24, i, -1):
+              if (inner_population_val[j - 1] != -1):
+                for k in range(0, 10):
+                  inner_population[j][k]  = inner_population[j - 1][k]
+                inner_population_val[j] = inner_population_val[j - 1]
+            for k in range(0, 10):
+              inner_population[i][k] = tempt[k]
+            inner_population_val[i] = val
+            break
+        
+        # random 
+        ran = randint(10, 50)
+        if (ran < 25):
+          for k in range(0, 10):
+            inner_population[ran][k] = tempt[k]
+          inner_population_val[ran] = val     
+      
+      obj_1.release()
 
   # cricial
   obj_3.acquire()
-  if (count_thread == 19):
+  if (count_thread == 24):
     obj_2.release()
   else:
     count_thread = count_thread + 1
@@ -193,18 +184,23 @@ def sub_thread(List, constraint, L, expression,k):
 
   return 0
 
+#oke1
 def main_thread(s, data, list_constraint):
   global inner_population
   global inner_population_val
-  global Random_population
   global count_thread
 
+  # count: dung de xac dinh random lan dau tien
   count = 0
+  count_random = 0
 
   while (True):
+    if (count == 0):
+      start_time = time.time()
+
     count_thread = 0
-    # Pick R
-    for i in range(0, 20):
+
+    for i in range(0, 25):
       if (count == 0):
         T = Thread(target=sub_thread, args=([], list_constraint, s, data,i, ))
       else:
@@ -213,30 +209,81 @@ def main_thread(s, data, list_constraint):
 
     count = 1
     obj_2.acquire()
-    print("t1: ", inner_population[0], " value: ", inner_population_val[0])
-    print(inner_population_val)
-    print()
+
+    # print("T1: ", inner_population[0], " value: ", inner_population_val[0])
+    # print(inner_population_val)
+    # print()
 
     if (inner_population_val[0] == 0):
-      return inner_population[0]
+      return inner_population[0], True
 
+    # ap dung: random restart hill climbing
+    end_time = time.time()
+    Period = round(end_time - start_time, 2)
+    if (Period > 180.0):
+      count = 0
+      count_random = count_random + 1
+      re_initialize()
+    
+    if (count_random == 4):
+      return [], False
+
+#oke1
 def intial_value():
   global inner_population 
   global inner_population_val 
 
   # intial inner_population
-  for i in range(0, 20):
+  for i in range(0, 25):
     tempt = []
     for j in range(0, 10):
       tempt.append("_")
     inner_population.append(tempt)
   
   # inital inner_population_val
-  for i in range(0, 20):
+  for i in range(0, 25):
     inner_population_val.append(-1)
+
+def re_initialize():
+  global inner_population 
+  global inner_population_val
+
+  # re_inital 
+  for i in range(0, 25):
+    for j in range(0, 10):
+      inner_population[i][j] = "_"
   
+  for i in range(0, 25):
+    inner_population_val[i] = -1
+
+#oke1
+def print_result(result, check, list):
+  if (check):
+    array = []
+    for i in list:
+      #check
+      for j in range(0, len(result)):
+        if result[j] == i:
+          array.append(j)
+          break
+    
+    with open("output.txt", "w") as output:
+      r = ""
+      for i in range(0, len(array)):
+        r = r + str(array[i])
+
+      output.write(r)
+      output.close()
+    
+    return
+  else:
+    with open("output.txt", "w") as output:
+      output.write("NO SOLUTION")
+      output.close()
 
 if __name__ == "__main__":
+  start_time = time.time()
+
   with open("input.txt","r") as input:
     data = input.readline()
     input.close()
@@ -245,14 +292,9 @@ if __name__ == "__main__":
   s, data = handle_data(data)
   list_constraint = determine_constraint(data)
 
-  result = main_thread(s, data, list_constraint)
+  result, check = main_thread(s, data, list_constraint)
   print(result)
+  print_result(result, check, s)
 
-  # sub_thread(['U', 'N', 'E', 'W', 'Y', 'P', 'O', 'B', 'R', 'L'], list_constraint, s, data)
-  # print("__________________________________________________")
-  # for i in range(0, 20):
-  #   print("T: ", inner_population[i], " val: ", inner_population_val[i])
-  # print(s)
-
-
-
+  end_time = time.time()
+  print ('total run-time: %d ms' % ((end_time - start_time) * 1000))
