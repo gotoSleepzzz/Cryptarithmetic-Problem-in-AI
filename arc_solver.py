@@ -1,6 +1,6 @@
+from ctypes import c_char_p
 from sortedcontainers import SortedSet
-import multiprocessing
-import time
+from multiprocessing import Manager, Process
 
 class Constraint:
     def __init__(self,scope,condition) -> None:
@@ -222,13 +222,13 @@ def type_one(left, right, chars_set):
         if i == 0:
             scope.append(f'C{i}')
             constraint.append(Constraint(tuple(scope),const_plus_type2))
+        elif i == max_len_R-1 :
+            scope.append(f'C{i-1}')
+            constraint.append(Constraint(tuple(scope),const_plus_type3))
         elif i < min_len_L or (min_len_L <= i and i < max_len_L-1):
             scope.append(f'C{i-1}')
             scope.append(f'C{i}')
             constraint.append(Constraint(tuple(scope),const_plus_type4))
-        elif i == max_len_R-1 :
-            scope.append(f'C{i-1}')
-            constraint.append(Constraint(tuple(scope),const_plus_type3))
         elif max_len_L <= i:
             scope.append(f'C{i-1}')
             constraint.append(Constraint(tuple(scope),eq))
@@ -313,7 +313,6 @@ def handle_input(input_data):
         left = None        
         if input_data.find('*') != -1:
             domain, constraint = type_three(left,right,chars_set)
-            pass
         elif input_data.find('(') != -1:
             equa = handle_parentheses(input_data)
             if equa.find('-') != -1:
@@ -327,8 +326,8 @@ def handle_input(input_data):
                 domain, constraint = type_one(left,right,chars_set)
         elif input_data.find('-') != -1:
             equa = handle_minus(input_data)
-            left = input_data.split('=')[1].split('+')
-            right = input_data.split('=')[0]
+            left = equa.split('=')[1].split('+')
+            right = equa.split('=')[0]
             domain, constraint = type_one(left,right,chars_set)
         else:
             left = input_data.split('=')[0].split('+')
@@ -439,37 +438,43 @@ class ACSolver:
                 return self.domain_splitting(new_doms1, to_do, arc_heuristic) or \
                        self.domain_splitting(new_doms2, to_do, arc_heuristic)
 
-def ac_solver(csp, arc_heuristic=sat_up):
-    solution=  ACSolver(csp).domain_splitting(arc_heuristic=arc_heuristic)
-    if solution:
+def ac_solver(csp,solution, arc_heuristic=sat_up):
+    sol =  ACSolver(csp).domain_splitting(arc_heuristic=arc_heuristic)
+    if sol:
         l = r = ""
-        for k in sorted(solution.keys()):
+        for k in sorted(sol.keys()):
             if len(k) == 1:
                 l+=str(k)
-                r+=str(solution[k])
-        print(l+'='+r)
-    else:
-        print("NO SOLUTION")
+                r+=str(sol[k])
+        solution.value = l + '=' + r
+        
 
 #__________________________________________________________________________
 
-def main():
-    input_data = 'SEND+MORE=MONEY'
-    # input_data = 'TEN+TEN+FORTY=SIXTY'
-    # input_data = 'BASE+BALL=GAMES'
-    # input_data = 'CROSS+ROADS=DANGER'
-    # input_data = 'LLP+LINEAR+LOGIC=PROLOG'
-    # input_data = 'AB+(CD-Ek)=XYZ'
-    csp = handle_input(input_data)
-    if csp:
-        # ac_solver(csp,solution)
-        p = multiprocessing.Process(target=ac_solver, name="Solver", args=(csp,))
-        p.start()
-        p.join(timeout=300)
-        p.terminate()
-    else:
-        print("Invalid strings")
+def main(waiting_time):
+    leve_l = []
+    leve_l.append('YOUR+YOU=HEART')
+    leve_l.append('BASE+BALL=GAMES')
+    leve_l.append('FOUR+ONE=FIVE')
+    leve_l.append('QUADRA-DOUBLE=DOUBLE')
+    leve_l.append('INTERNET-NETWORK=MONITOR')
+
+    for inp in leve_l:
+        csp = handle_input(inp)
+        if csp:
+            print(f"Maximum time is: {waiting_time}s")
+            print(inp)
+            manager = Manager()
+            solution = manager.Value(c_char_p,'NO SOLUTION')
+            p = Process(target=ac_solver, name="Solver", args=(csp,solution,))
+            p.start()
+            p.join(timeout=waiting_time)
+            p.terminate()
+            print(solution.value)
+            print("Done")
+        else:
+            print("Invalid strings")
 
 if __name__ == "__main__":
-
-    main()
+    waiting_time = 350
+    main(waiting_time)
