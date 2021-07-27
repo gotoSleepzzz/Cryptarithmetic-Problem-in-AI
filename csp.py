@@ -380,8 +380,8 @@ say_my_style = CSP(
 
 # print(ac_solver(hi_hi_you))
 # print(ac_solver(two_two_four))
-print(ac_solver(send_more_money))
-
+# print(ac_solver(send_more_money))
+print(ac_solver(forty_ten_ten_sixty))
 # print('H I * H I = B Y E')
 # print(ac_solver(hi_hi_bye))
 
