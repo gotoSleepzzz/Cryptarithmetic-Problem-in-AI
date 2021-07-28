@@ -187,12 +187,6 @@ def type_one(left, right, chars_set):
 
     for c in chars_set:
         if len(c) > 1:
-            domain[c] = set(range(0,max(len(left),len(right))))
-        else:
-            domain[c] = set(range(0,10))
-
-    for c in chars_set:
-        if len(c) > 1:
             domain[c] = set(range(0,len(left)))
         else:
             domain[c] = set(range(0,10))
@@ -301,6 +295,59 @@ def type_two(left, right, chars_set):
     pass
 
 def type_three(left,right,chars_set):
+    constraint = []
+    domain = {}
+    max_len_R = len(right)
+    max_len_L = max([len(x) for x in left])
+    min_len_L = min([len(x) for x in left])
+
+    if max_len_R < min_len_L + max_len_L - 2:
+        return
+
+    for i in range(0,max_len_R-1):
+        chars_set.add(f'C{i}')
+
+    for c in chars_set:
+        if len(c) > 1:
+            domain[c] = set(range(0,min_len_L*10))
+        else:
+            domain[c] = set(range(0,10))
+
+    domain[right[0]].remove(0)
+
+    right = right[::-1]
+    for i in left:
+        try:
+            domain[i[0]].remove(0)
+        except Exception as e:
+            pass
+    left = [ i[::-1] for i in left]
+
+
+    constraint.append(Constraint(tuple([k for k in domain.keys() if len(k) == 1]),all_diff))
+
+    count = 1
+    for i in range(0,max_len_R):
+        scope = []
+        for h in range(0,len(left[0])):
+            for k in range(0, count):
+                if h+k == i:
+                    scope.append(left[0][h])
+                    scope.append(left[1][k])
+        if count < len(left[1]):
+            count += 1
+        scope.append(right[i])
+        if i == 0:
+            scope.append(f'C{i}')
+            constraint.append(Constraint(tuple(scope),const_multi_type2))
+        elif i == max_len_R-1 :
+            scope.append(f'C{i-1}')
+            constraint.append(Constraint(tuple(scope),const_multi_type3))
+        else:
+            scope.append(f'C{i-1}')
+            scope.append(f'C{i}')
+            constraint.append(Constraint(tuple(scope),const_multi_type4))
+    return domain,constraint
     pass
        
 def handle_input(input_data):
@@ -312,6 +359,8 @@ def handle_input(input_data):
         right = None
         left = None        
         if input_data.find('*') != -1:
+            right = input_data.split('=')[1]
+            left = input_data.split('=')[0].split('*')
             domain, constraint = type_three(left,right,chars_set)
         elif input_data.find('(') != -1:
             equa = handle_parentheses(input_data)
@@ -438,7 +487,7 @@ class ACSolver:
                 return self.domain_splitting(new_doms1, to_do, arc_heuristic) or \
                        self.domain_splitting(new_doms2, to_do, arc_heuristic)
 
-def ac_solver(csp,solution, arc_heuristic=sat_up):
+def ac_solver(csp,solution = None, arc_heuristic=sat_up):
     sol =  ACSolver(csp).domain_splitting(arc_heuristic=arc_heuristic)
     if sol:
         l = r = ""
@@ -446,7 +495,10 @@ def ac_solver(csp,solution, arc_heuristic=sat_up):
             if len(k) == 1:
                 l+=str(k)
                 r+=str(sol[k])
-        solution.value = l + '=' + r
+        if solution:
+            solution.value = l + '=' + r
+        else:
+            return l+'='+r
         
 
 #__________________________________________________________________________
@@ -476,5 +528,15 @@ def main(waiting_time):
             print("Invalid strings")
 
 if __name__ == "__main__":
+    # inp = "PACIFIC+PACIFIC+PACIFIC=ATLANTIC"
+    # inp = "SEND+MORE=MONEY"
+    # inp = "TEN+TEN+FORTY=SIXTY"
+    # inp = "SO+MANY+MORE+MEN+SEEM+TO+SAY+THAT+THEY+MAY+SOON+TRY+TO+STAY+AT+HOME+SO+AS+TO+SEE+OR+HEAR+THE+SAME+ONE+MAN+TRY+TO+MEET+THE+TEAM+ON+THE+MOON+AS+HE+HAS+AT+THE+OTHER+TEN=TESTS"
+    # inp = "SEND+(MORE+MONEY)-OR+DIE=NUOYI"
+    # inp = "HE*EH=HNME"
+    # csp = handle_input(inp)
+    # print(inp)
+    # out = ac_solver(csp)
+    # print(out)
     waiting_time = 350
     main(waiting_time)
