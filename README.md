@@ -9,6 +9,6 @@
 - 19127593 - Lê Tiến Trí
 
 ## Descripe
-We have two solutions for this problem
+' We have two solutions for this problem '
 -Parallel genetics + multithread
 -Arc consistency
