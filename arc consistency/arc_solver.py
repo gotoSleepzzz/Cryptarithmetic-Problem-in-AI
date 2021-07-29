@@ -21,7 +21,6 @@ class CSP:
         self.variables = set(domain)
         self.domains = domain
         self.constraints = constraints
-        # self.check = ['-']*10
         self.var_to_const = {var: set() for var in self.variables}
         for con in constraints:
             for var in con.scope:
@@ -398,7 +397,7 @@ def extend(s, var, val):
 def first(iterable, default=None):
     return next(iter(iterable), default)
 
-def sat_up(to_do):
+def LCV(to_do):
     return SortedSet(to_do, key=lambda t: 1 / len([var for var in t[1].scope]))
 
 def partition_domain(dom):
@@ -411,7 +410,7 @@ class ACSolver:
     def __init__(self, csp):
         self.csp = csp
 
-    def gen_ac(self, orig_domains=None, to_do=None, arc_heuristic=sat_up):
+    def gen_ac(self, orig_domains=None, to_do=None, arc_heuristic=LCV):
         if orig_domains is None:
             orig_domains = self.csp.domains
         if to_do is None:
@@ -452,42 +451,42 @@ class ACSolver:
         return True, domains, checks
 
     def new_to_do(self, var, const):
-        return {(nvar, nconst) for nconst in self.csp.var_to_const[var]
-                if nconst != const
-                for nvar in nconst.scope
-                if nvar != var}
+        return {(v, c) for c in self.csp.var_to_const[var]
+                if c != const
+                for v in c.scope
+                if v != var}
 
-    def back_track(self, domains, const, env, other_vars, ind=0, checks=0):
-        if ind == len(other_vars):
+    def back_track(self, domains, const, env, other, i=0, checks=0):
+        if i == len(other):
             return const.check_condition(env), checks + 1
         else:
-            var = other_vars[ind]
+            var = other[i]
             for val in domains[var]:
                 env[var] = val
-                holds, checks = self.back_track(domains, const, env, other_vars, ind + 1, checks)
+                holds, checks = self.back_track(domains, const, env, other, i + 1, checks)
                 if holds:
                     return True, checks
             return False, checks
 
-    def domain_splitting(self, domains=None, to_do=None, arc_heuristic=sat_up):
+    def domain_splitting(self, domains=None, to_do=None, arc_heuristic=LCV):
         if domains is None:
             domains = self.csp.domains
-        consistency, new_domains, _ = self.gen_ac(domains, to_do, arc_heuristic)
+        consistency, new_domain, _ = self.gen_ac(domains, to_do, arc_heuristic)
         if not consistency:
             return False
-        elif all(len(new_domains[var]) == 1 for var in domains):
-            return {var: first(new_domains[var]) for var in domains}
+        elif all(len(new_domain[var]) == 1 for var in domains):
+            return {var: first(new_domain[var]) for var in domains}
         else:
-            var = first(x for x in self.csp.variables if len(new_domains[x]) > 1)
+            var = first(x for x in self.csp.variables if len(new_domain[x]) > 1)
             if var:
-                dom1, dom2 = partition_domain(new_domains[var])
-                new_doms1 = extend(new_domains, var, dom1)
-                new_doms2 = extend(new_domains, var, dom2)
+                dom1, dom2 = partition_domain(new_domain[var])
+                new_dom1 = extend(new_domain, var, dom1)
+                new_dom2 = extend(new_domain, var, dom2)
                 to_do = self.new_to_do(var, None)
-                return self.domain_splitting(new_doms1, to_do, arc_heuristic) or \
-                       self.domain_splitting(new_doms2, to_do, arc_heuristic)
+                return self.domain_splitting(new_dom1, to_do, arc_heuristic) or \
+                       self.domain_splitting(new_dom2, to_do, arc_heuristic)
 
-def ac_solver(csp,solution = None, arc_heuristic=sat_up):
+def ac_solver(csp,solution = None, arc_heuristic=LCV):
     sol =  ACSolver(csp).domain_splitting(arc_heuristic=arc_heuristic)
     if sol:
         l = r = ""
@@ -528,15 +527,5 @@ def main(waiting_time):
             print("Invalid strings")
 
 if __name__ == "__main__":
-    # inp = "PACIFIC+PACIFIC+PACIFIC=ATLANTIC"
-    # inp = "SEND+MORE=MONEY"
-    # inp = "TEN+TEN+FORTY=SIXTY"
-    # inp = "SO+MANY+MORE+MEN+SEEM+TO+SAY+THAT+THEY+MAY+SOON+TRY+TO+STAY+AT+HOME+SO+AS+TO+SEE+OR+HEAR+THE+SAME+ONE+MAN+TRY+TO+MEET+THE+TEAM+ON+THE+MOON+AS+HE+HAS+AT+THE+OTHER+TEN=TESTS"
-    # inp = "SEND+(MORE+MONEY)-OR+DIE=NUOYI"
-    # inp = "HE*EH=HNME"
-    # csp = handle_input(inp)
-    # print(inp)
-    # out = ac_solver(csp)
-    # print(out)
     waiting_time = 350
     main(waiting_time)
