@@ -10,5 +10,5 @@
 
 ## Descripe
 ' We have two solutions for this problem '
--Parallel genetics + multithread
--Arc consistency
+- Parallel genetics + multithread
+- Arc consistency
