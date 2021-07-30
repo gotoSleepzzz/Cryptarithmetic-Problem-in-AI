@@ -505,18 +505,18 @@ def ac_solver(csp,solution = None, arc_heuristic=LCV):
 
 def main(waiting_time):
     cases = []
-    for i in range(1,5):
-        reader =  open(f"level{i}.txt","r")
+    reader =  open("input.txt","r")
+    line = reader.readline()
+    while line!='':
+        try:
+            line = line.replace('\n','')
+        except:
+            pass
+        cases.append(line)
         line = reader.readline()
-        while line!='':
-            try:
-                line = line.replace('\n','')
-            except:
-                pass
-            cases.append(line)
-            line = reader.readline()
-        reader.close()
-
+    reader.close()
+    
+    fout = open("output.txt","w")
     for inp in cases:
         print('----------------------------------------------')
         print(inp)
@@ -531,10 +531,12 @@ def main(waiting_time):
             p.start()
             p.join(timeout=waiting_time)
             p.terminate()
-
+            fout.write(solution.value)
+            fout.write('\n')
             print(solution.value)
         else:
             print("Invalid strings")
+    fout.close()
 
 if __name__ == "__main__":
     waiting_time = 350
