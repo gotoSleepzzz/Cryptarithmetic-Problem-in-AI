@@ -1,4 +1,5 @@
 from ctypes import c_char_p
+from time import time
 from sortedcontainers import SortedSet
 from multiprocessing import Manager, Process
 
@@ -218,13 +219,10 @@ def type_one(left, right, chars_set):
         elif i == max_len_R-1 :
             scope.append(f'C{i-1}')
             constraint.append(Constraint(tuple(scope),const_plus_type3))
-        elif i < min_len_L or (min_len_L <= i and i < max_len_L-1):
+        else:
             scope.append(f'C{i-1}')
             scope.append(f'C{i}')
             constraint.append(Constraint(tuple(scope),const_plus_type4))
-        elif max_len_L <= i:
-            scope.append(f'C{i-1}')
-            constraint.append(Constraint(tuple(scope),eq))
     return domain,constraint
     pass
 
@@ -487,7 +485,10 @@ class ACSolver:
                        self.domain_splitting(new_dom2, to_do, arc_heuristic)
 
 def ac_solver(csp,solution = None, arc_heuristic=LCV):
+    start = time()
     sol =  ACSolver(csp).domain_splitting(arc_heuristic=arc_heuristic)
+    end = time()
+    print("total run-time: %d ms"%((end-start)*1000))
     if sol:
         l = r = ""
         for k in sorted(sol.keys()):
@@ -503,26 +504,35 @@ def ac_solver(csp,solution = None, arc_heuristic=LCV):
 #__________________________________________________________________________
 
 def main(waiting_time):
-    leve_l = []
-    leve_l.append('YOUR+YOU=HEART')
-    leve_l.append('BASE+BALL=GAMES')
-    leve_l.append('FOUR+ONE=FIVE')
-    leve_l.append('QUADRA-DOUBLE=DOUBLE')
-    leve_l.append('INTERNET-NETWORK=MONITOR')
+    cases = []
+    for i in range(1,5):
+        reader =  open(f"level{i}.txt","r")
+        line = reader.readline()
+        while line!='':
+            try:
+                line = line.replace('\n','')
+            except:
+                pass
+            cases.append(line)
+            line = reader.readline()
+        reader.close()
 
-    for inp in leve_l:
+    for inp in cases:
+        print('----------------------------------------------')
+        print(inp)
         csp = handle_input(inp)
         if csp:
             print(f"Maximum time is: {waiting_time}s")
-            print(inp)
+            
             manager = Manager()
             solution = manager.Value(c_char_p,'NO SOLUTION')
+            
             p = Process(target=ac_solver, name="Solver", args=(csp,solution,))
             p.start()
             p.join(timeout=waiting_time)
             p.terminate()
+
             print(solution.value)
-            print("Done")
         else:
             print("Invalid strings")
 
